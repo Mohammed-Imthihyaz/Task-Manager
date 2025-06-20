@@ -5,14 +5,14 @@ This is a simple Task Manager Application built with Spring Boot.
 
 ## Features
 
-- ✅ Create Users  
-- 📋 List All Users  
-- 📝 Create Tasks  
-- 🔁 Assign/Reassign Tasks to Users  
-- 📦 List All Tasks  
-- ❌ Delete Tasks  
-- 👤 Fetch All Tasks Assigned to a User  
-- 📌 Fetch All Assigned Tasks  
+-  Create Users  
+-  List All Users  
+-  Create Tasks  
+-  Assign/Reassign Tasks to Users  
+-  List All Tasks  
+-  Delete Tasks  
+-  Fetch All Tasks Assigned to a User  
+-  Fetch All Assigned Tasks  
 
 ## Requirements
 
@@ -54,7 +54,7 @@ mvn spring-boot:run
 
 ## API Documentation
 
-### 🔹 Create User
+###  Create User
 
 - **Method:** POST  
 - **URL:** http://localhost:8080/users/create  
@@ -66,12 +66,12 @@ mvn spring-boot:run
 }
 ```
 
-### 🔹 List All Users
+###  List All Users
 
 - **Method:** GET  
 - **URL:** http://localhost:8080/users/list
 
-### 🔹 Create Task
+###  Create Task
 
 - **Method:** POST  
 - **URL:** http://localhost:8080/tasks/create  
@@ -83,12 +83,12 @@ mvn spring-boot:run
 }
 ```
 
-### 🔹 List All Tasks
+###  List All Tasks
 
 - **Method:** GET  
 - **URL:** http://localhost:8080/tasks/list
 
-### 🔹 Assign Task to User
+###  Assign Task to User
 
 - **Method:** POST  
 - **URL:** http://localhost:8080/tasks/assign  
@@ -96,7 +96,7 @@ mvn spring-boot:run
   - taskId: Task ID (e.g., 1)
   - userId: User ID (e.g., 3)
 
-### 🔹 Reassign Task
+###  Reassign Task
 
 - **Method:** POST  
 - **URL:** http://localhost:8080/tasks/reassign  
@@ -104,21 +104,21 @@ mvn spring-boot:run
   - taskId: Task ID
   - userId: New User ID
 
-### 🔹 Delete Task
+###  Delete Task
 
 - **Method:** DELETE  
 - **URL:** http://localhost:8080/tasks/delete  
 - **Params:**
   - taskId: Task ID
 
-### 🔹 Fetch Tasks for a User
+###  Fetch Tasks for a User
 
 - **Method:** GET  
 - **URL:** http://localhost:8080/users/get-user-task  
 - **Params:**
   - userId: User ID
 
-### 🔹 Get All Assigned Tasks
+###  Get All Assigned Tasks
 
 - **Method:** GET  
 - **URL:** http://localhost:8080/tasks/getallassigendtasks
