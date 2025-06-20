@@ -61,8 +61,7 @@ mvn spring-boot:run
 - **Body:**
 ```json
 {
-  "name": "John Doe",
-  "email": "john@example.com"
+  "username": "John Doe",
 }
 ```
 
@@ -78,8 +77,8 @@ mvn spring-boot:run
 - **Body:**
 ```json
 {
-  "title": "Fix bug #404",
-  "description": "Fix the 404 page crash issue"
+  "task_name": "Fix bug #404",
+  "task_description": "Fix the 404 page crash issue"
 }
 ```
 
