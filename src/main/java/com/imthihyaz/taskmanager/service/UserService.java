@@ -44,4 +44,9 @@ public class UserService {
         if(allTasksOfUser.isEmpty())throw new Exception("No task is assigend to the user");
         return allTasksOfUser;
     }
+
+    public void deleteTask(Long taskId)throws Exception {
+        Task task =taskRepository.findById(taskId).orElseThrow(()->new Exception("Task not found"));
+        taskRepository.delete(task);
+    }
 }

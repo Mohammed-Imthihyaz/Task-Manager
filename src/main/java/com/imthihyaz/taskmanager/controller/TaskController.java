@@ -22,7 +22,7 @@ public class TaskController {
     @Autowired
     private UserService userService;
 
-    @PostMapping("/create")
+    @PostMapping()
     public ResponseEntity<CustomResponse<Task>> createTask(@RequestBody Task task) {
 
         try{
@@ -33,11 +33,11 @@ public class TaskController {
         }
     }
 
-    @GetMapping("/list")
+    @GetMapping()
     public ResponseEntity<CustomResponse<List<Task>>> listTasks() {
         try {
             List<Task> allTask=  taskService.listTasks();
-            return new ResponseEntity<>(new CustomResponse<>(true,allTask,"Retrived all available tasks"),HttpStatus.FOUND);
+            return new ResponseEntity<>(new CustomResponse<>(true,allTask,"Retrived all available tasks"),HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(new CustomResponse<>(false,null,e.getMessage()),HttpStatus.NOT_FOUND );
         }
@@ -47,8 +47,11 @@ public class TaskController {
     @PostMapping("/assign")
     public ResponseEntity<CustomResponse<Task>> assignTask(@RequestParam Long taskId, @RequestParam Long userId) {
         try{
+            System.out.println(taskId);
             User user = userService.getUserById(userId);
+            System.out.println(user);
             Task t = taskService.assignTask(taskId, user);
+            System.out.println(t);
             return new ResponseEntity<>(new CustomResponse<>(true,t,"Assigned task to user"),HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(new CustomResponse<>(false,null,e.getMessage()),HttpStatus.NOT_FOUND );
@@ -67,7 +70,7 @@ public class TaskController {
         }
     }
 
-    @DeleteMapping("/delete")
+    @DeleteMapping("")
     public ResponseEntity<CustomResponse<Boolean>> deleteTask(@RequestParam Long taskId){
         try{
             taskService.deleteTask(taskId);
@@ -81,9 +84,20 @@ public class TaskController {
     public  ResponseEntity<CustomResponse<List<Task>>> getAllAssigendTask(){
         try{
             List<Task> tasks =taskService.getAllAssigedTasks();
+            System.out.println(tasks);
             return new ResponseEntity<>(new CustomResponse<>(true,tasks,"Fetched all the assigend taks"),HttpStatus.FOUND);
         } catch (Exception e) {
             return new ResponseEntity<>(new CustomResponse<>(false,null,e.getMessage()),HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @GetMapping("/All-Un-Assigned")
+    public ResponseEntity<CustomResponse<List<Task>>>  allUnAssignedTask(){
+        try{
+            List<Task> tasks =taskService.allUnAssignedTask();
+            return new ResponseEntity<>(new CustomResponse<>(true,tasks,"Fetched all the un assigned tasks"),HttpStatus.FOUND);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }

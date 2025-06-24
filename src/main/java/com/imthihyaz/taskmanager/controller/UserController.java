@@ -50,5 +50,4 @@ public class UserController {
             return new ResponseEntity<>(new CustomResponse<>(false,null,e.getMessage()),HttpStatus.BAD_REQUEST);
         }
     }
-
 }

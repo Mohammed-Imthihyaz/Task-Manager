@@ -2,10 +2,15 @@ package com.imthihyaz.taskmanager.service;
 
 
 import com.imthihyaz.taskmanager.dao.TaskRepository;
+import com.imthihyaz.taskmanager.dto.CustomResponse;
 import com.imthihyaz.taskmanager.model.Task;
 import com.imthihyaz.taskmanager.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,5 +59,17 @@ public class TaskService {
                 throw new Exception("NO task is assgined to any user");
             }
             return assignedTasks;
+    }
+
+    public List<Task> allUnAssignedTask() throws  Exception{
+        List<Task> unAssignedTasks =new ArrayList<>();
+        List<Task> allTasks =taskRepository.findAll();
+        for(Task t :allTasks){
+            if(t.getAssignedTo() == null)unAssignedTasks.add(t);
+        }
+        if(unAssignedTasks.isEmpty()){
+            throw new Exception("No UnAssigned tasks are present");
+        }
+        return unAssignedTasks;
     }
 }
