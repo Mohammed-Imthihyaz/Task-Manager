@@ -1,10 +1,14 @@
 package com.imthihyaz.taskmanager.model;
 
-import com.imthihyaz.taskmanager.model.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 
 @Entity
@@ -12,16 +16,23 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "tasks")
+@Builder
 public class Task {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long taskId;
 
-    @Column(name = "")
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID taskId;
+
+    @Column(name = "task_name")
     private String taskName;
+
+    @Column(length = 1024)
     private String taskDescription;
 
     @ManyToOne
     @JoinColumn(name ="assigned_to")
     private User assignedTo;
+
+    @Column(name="user_assigned_time")
+    private LocalDateTime localDateTime;
 }

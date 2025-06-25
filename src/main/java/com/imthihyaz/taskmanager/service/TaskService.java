@@ -1,75 +1,128 @@
 package com.imthihyaz.taskmanager.service;
 
-
 import com.imthihyaz.taskmanager.dao.TaskRepository;
-import com.imthihyaz.taskmanager.dto.CustomResponse;
+import com.imthihyaz.taskmanager.dto.TaskDto;
+import com.imthihyaz.taskmanager.dto.UserActivityDto;
+import com.imthihyaz.taskmanager.exceptions.TaskExceptions;
 import com.imthihyaz.taskmanager.model.Task;
 import com.imthihyaz.taskmanager.model.User;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
+@Slf4j
 public class TaskService {
 
     @Autowired
     private TaskRepository taskRepository;
 
-    public Task createTask(Task task) throws Exception {
-      List<Task> list = taskRepository.findAll();
-        for (Task value : list) {
-            if(value.getTaskName().equals(task.getTaskName())) throw new Exception("Same task exists");
-        }
-        return taskRepository.save(task);
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private UserActivityService userActivityService;
+
+    public Task createTask(TaskDto taskDto) {
+        log.debug("Creating task: {}", taskDto.getTaskName());
+        Task task = Task.builder()
+                .taskDescription(taskDto.getTaskDescription())
+                .taskName(taskDto.getTaskName())
+                .build();
+        Task createdTask = taskRepository.save(task);
+        log.info("Task created: {}", createdTask);
+        return createdTask;
     }
 
     public List<Task> listTasks() {
-        return taskRepository.findAll();
+        log.debug("Listing all tasks");
+        List<Task> tasks = taskRepository.findAll();
+        if (tasks.isEmpty()) {
+            log.error("No tasks found");
+            throw new TaskExceptions("No tasks found");
+        }
+        log.info("Found {} tasks", tasks.size());
+        return tasks;
     }
 
-    public Task assignTask(Long taskId, User user) throws Exception{
-        Task task = taskRepository.findById(taskId).orElseThrow(()->new Exception("Task Not found"));
+    public Task assignTask(UUID taskId, UUID userId) {
+        log.debug("Assigning task: {} to user: {}", taskId, userId);
+        User user = userService.getUserById(userId);
+        Task task = taskRepository.findById(taskId).orElseThrow(() -> {
+            log.error("No task found by id {}", taskId);
+            throw new TaskExceptions("Task not found");
+        });
         task.setAssignedTo(user);
-        return taskRepository.save(task);
+        LocalDateTime currentDateTime = LocalDateTime.now();
+        task.setLocalDateTime(currentDateTime);
+        UserActivityDto userActivityDto = UserActivityDto.builder()
+                .task(task)
+                .user(user)
+                .startTime(currentDateTime)
+                .build();
+        userActivityService.addUserActivityTask(userActivityDto); // Correct method call
+        log.info("Added to User Activity");
+        Task updatedTask = taskRepository.save(task);
+        log.info("Assigned task: {} to user: {}", updatedTask.getTaskName(), user.getUsername());
+        return updatedTask;
     }
 
-    public Task reassignTask(Long taskId, User user) throws Exception {
-        return assignTask(taskId, user);
+    public Task reassignTask(UUID taskId, UUID userId) throws Exception {
+        log.debug("Reassigning task: {}", taskId);
+        Task task = taskRepository.findById(taskId).orElseThrow(() -> {
+            log.error("No task found by id {}", taskId);
+            throw new TaskExceptions("Task not found");
+        });
+        if (task.getAssignedTo() != null) {
+            log.debug("Unassigning task from user: {}", task.getAssignedTo().getUsername());
+            task.setAssignedTo(null);
+        }
+        return assignTask(taskId, userId);
     }
 
-    public void deleteTask(Long taskId) throws Exception {
-        Task t =taskRepository.findById(taskId).orElseThrow(()->new Exception("Task not found"));
+    public void deleteTask(UUID taskId) throws Exception {
+        log.debug("Deleting task: {}", taskId);
+        Task task = taskRepository.findById(taskId).orElseThrow(() -> {
+            log.error("No task found by id {}", taskId);
+            return new TaskExceptions("Task not found");
+        });
         taskRepository.deleteById(taskId);
-        System.out.println("Deleted successfully");
+        log.info("Deleted task: {}", task.getTaskName());
     }
 
-    public List<Task> getAllAssigedTasks  () throws Exception {
-            List<Task> assignedTasks =new ArrayList<>();
-            List<Task> allTasks =taskRepository.findAll();
-            for(Task t:allTasks){
-                if(t.getAssignedTo() !=null)assignedTasks.add(t);
-            }
-            if(assignedTasks.isEmpty()){
-                throw new Exception("NO task is assgined to any user");
-            }
-            return assignedTasks;
+    public List<Task> getAllAssignedTasks() {
+        log.debug("Retrieving all assigned tasks");
+        List<Task> assignedTasks = taskRepository.findByAssignedToIsNotNull();
+        if (assignedTasks.isEmpty()) {
+            log.error("No assigned tasks found");
+            throw new TaskExceptions("No task is assigned to any user");
+        }
+        log.info("Found {} assigned tasks", assignedTasks.size());
+        return assignedTasks;
     }
 
-    public List<Task> allUnAssignedTask() throws  Exception{
-        List<Task> unAssignedTasks =new ArrayList<>();
-        List<Task> allTasks =taskRepository.findAll();
-        for(Task t :allTasks){
-            if(t.getAssignedTo() == null)unAssignedTasks.add(t);
+    public List<Task> getAllUnassignedTasks() {
+        log.debug("Retrieving all unassigned tasks");
+        List<Task> unAssignedTasks = taskRepository.findByAssignedToIsNull();
+        if (unAssignedTasks.isEmpty()) {
+            log.error("No unassigned tasks found");
+            throw new TaskExceptions("All tasks are assigned");
         }
-        if(unAssignedTasks.isEmpty()){
-            throw new Exception("No UnAssigned tasks are present");
-        }
+        log.info("Found {} unassigned tasks", unAssignedTasks.size());
         return unAssignedTasks;
+    }
+
+    public Task getTaskById(UUID taskId) throws Exception {
+        log.debug("Retrieving task by id: {}", taskId);
+        Task task = taskRepository.findById(taskId).orElseThrow(() -> {
+            log.error("No task found by id {}", taskId);
+            return new TaskExceptions("Task not found");
+        });
+        log.info("Retrieved task: {}", task.getTaskName());
+        return task;
     }
 }
