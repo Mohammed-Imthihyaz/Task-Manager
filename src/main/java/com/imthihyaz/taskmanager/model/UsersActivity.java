@@ -11,8 +11,6 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Setter
-@Getter
 @Table(name = "users_activity")
 public class UsersActivity {
     @Id

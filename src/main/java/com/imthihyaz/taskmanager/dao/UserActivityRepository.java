@@ -10,4 +10,6 @@ import java.util.UUID;
 public interface UserActivityRepository extends JpaRepository<UsersActivity, UUID> {
     List<UsersActivity> findByIsActiveTrue();
     Optional<UsersActivity> findByTask_TaskIdAndIsActiveTrue(UUID taskId);
+    List<UsersActivity> findByTask_TaskIdAndIsActiveFalse(UUID taskId);
+    Optional<UsersActivity> findByUser_UserIdAndIsActiveFalse(UUID userId);
 }
