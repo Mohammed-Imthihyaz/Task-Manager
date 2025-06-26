@@ -80,6 +80,7 @@ public class TaskService {
         if (task.getAssignedTo() != null) {
             log.debug("Unassigning task from user: {}", task.getAssignedTo().getUsername());
             task.setAssignedTo(null);
+           userActivityService.makeUserInActive(taskId);
         }
         return assignTask(taskId, userId);
     }
