@@ -1,13 +1,18 @@
 package com.imthihyaz.taskmanager.service;
 
 import com.imthihyaz.taskmanager.dao.TaskRepository;
+import com.imthihyaz.taskmanager.dao.UserActivityRepository;
 import com.imthihyaz.taskmanager.dto.TaskDto;
 import com.imthihyaz.taskmanager.dto.UserActivityDto;
 import com.imthihyaz.taskmanager.exceptions.TaskExceptions;
 import com.imthihyaz.taskmanager.model.Task;
 import com.imthihyaz.taskmanager.model.User;
+import com.imthihyaz.taskmanager.model.UsersActivity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -27,6 +32,10 @@ public class TaskService {
     @Autowired
     private UserActivityService userActivityService;
 
+    @Autowired
+    private UserActivityRepository userActivityRepository;
+
+    @CachePut(value = "tasks", key = "#result.taskId")
     public Task createTask(TaskDto taskDto) {
         log.debug("Creating task: {}", taskDto.getTaskName());
         Task task = Task.builder()
@@ -36,6 +45,17 @@ public class TaskService {
         Task createdTask = taskRepository.save(task);
         log.info("Task created: {}", createdTask);
         return createdTask;
+    }
+
+    @Cacheable(value = "tasks", key = "#taskId")
+    public Task getTaskById(UUID taskId) throws Exception {
+        log.debug("Retrieving task by id: {}", taskId);
+        Task task = taskRepository.findById(taskId).orElseThrow(() -> {
+            log.error("No task found by id {}", taskId);
+            return new TaskExceptions("Task not found");
+        });
+        log.info("Retrieved task: {}", task.getTaskName());
+        return task;
     }
 
     public List<Task> listTasks() {
@@ -56,6 +76,7 @@ public class TaskService {
             log.error("No task found by id {}", taskId);
             throw new TaskExceptions("Task not found");
         });
+        log.info("{}", task);
         task.setAssignedTo(user);
         LocalDateTime currentDateTime = LocalDateTime.now();
         task.setLocalDateTime(currentDateTime);
@@ -64,7 +85,7 @@ public class TaskService {
                 .user(user)
                 .startTime(currentDateTime)
                 .build();
-        userActivityService.addUserActivityTask(userActivityDto); // Correct method call
+        userActivityService.addUserActivityTask(userActivityDto);
         log.info("Added to User Activity");
         Task updatedTask = taskRepository.save(task);
         log.info("Assigned task: {} to user: {}", updatedTask.getTaskName(), user.getUsername());
@@ -80,17 +101,24 @@ public class TaskService {
         if (task.getAssignedTo() != null) {
             log.debug("Unassigning task from user: {}", task.getAssignedTo().getUsername());
             task.setAssignedTo(null);
-           userActivityService.makeUserInActive(taskId);
+            userActivityService.makeUserInActive(taskId);
         }
         return assignTask(taskId, userId);
     }
 
+    @CacheEvict(value = "tasks", key = "#taskId")
     public void deleteTask(UUID taskId) throws Exception {
         log.debug("Deleting task: {}", taskId);
         Task task = taskRepository.findById(taskId).orElseThrow(() -> {
             log.error("No task found by id {}", taskId);
             return new TaskExceptions("Task not found");
         });
+
+        List<UsersActivity> activities = userActivityRepository.findByTask_TaskId(taskId);
+        if (activities != null && !activities.isEmpty()) {
+            userActivityRepository.deleteAll(activities);
+            log.info("Deleted user activities referencing the task: {}", taskId);
+        }
         taskRepository.deleteById(taskId);
         log.info("Deleted task: {}", task.getTaskName());
     }
@@ -115,15 +143,5 @@ public class TaskService {
         }
         log.info("Found {} unassigned tasks", unAssignedTasks.size());
         return unAssignedTasks;
-    }
-
-    public Task getTaskById(UUID taskId) throws Exception {
-        log.debug("Retrieving task by id: {}", taskId);
-        Task task = taskRepository.findById(taskId).orElseThrow(() -> {
-            log.error("No task found by id {}", taskId);
-            return new TaskExceptions("Task not found");
-        });
-        log.info("Retrieved task: {}", task.getTaskName());
-        return task;
     }
 }

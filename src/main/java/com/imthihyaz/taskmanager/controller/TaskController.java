@@ -2,8 +2,11 @@ package com.imthihyaz.taskmanager.controller;
 
 import com.imthihyaz.taskmanager.customResponse.CustomResponse;
 import com.imthihyaz.taskmanager.dto.TaskDto;
+import com.imthihyaz.taskmanager.exceptions.TaskExceptions;
 import com.imthihyaz.taskmanager.model.Task;
+import com.imthihyaz.taskmanager.model.UsersActivity;
 import com.imthihyaz.taskmanager.service.TaskService;
+import com.imthihyaz.taskmanager.service.UserActivityService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -20,29 +23,34 @@ public class TaskController {
 
     @Autowired
     private TaskService taskService;
+    @Autowired
+    private UserActivityService userActivityService;
 
-    @PostMapping()
+    @PostMapping
     public ResponseEntity<CustomResponse<Task>> createTask(@RequestBody TaskDto taskDto) {
-        log.info("The task name is " + taskDto.getTaskName());
+        log.info("Creating task with name: {}", taskDto.getTaskName());
         try {
             Task task = taskService.createTask(taskDto);
-            log.info("Task created successfully " + task);
-            return new ResponseEntity<>(new CustomResponse<>(task, "Task Created Successfully"), HttpStatus.CREATED);
+            log.info("Task created successfully: {}", task);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(new CustomResponse<>(task, "Task created successfully"));
         } catch (Exception e) {
             log.error("Error creating task", e);
-            return new ResponseEntity<>(new CustomResponse<>(null, e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new CustomResponse<>(null, "Error creating task"));
         }
     }
 
-    @GetMapping("")
+    @GetMapping()
     public ResponseEntity<CustomResponse<List<Task>>> listTasks() {
         try {
             List<Task> allTasks = taskService.listTasks();
-            log.info("Retrieved all the tasks " + allTasks);
-            return new ResponseEntity<>(new CustomResponse<>(allTasks, "Retrieved all available tasks"), HttpStatus.OK);
+            log.info("Retrieved all tasks: {}", allTasks);
+            return ResponseEntity.ok(new CustomResponse<>(allTasks, "Retrieved all tasks"));
         } catch (Exception e) {
             log.error("Error retrieving tasks", e);
-            return new ResponseEntity<>(new CustomResponse<>(null, e.getMessage()), HttpStatus.NOT_FOUND);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new CustomResponse<>(null, "Error retrieving tasks"));
         }
     }
 
@@ -50,71 +58,120 @@ public class TaskController {
     public ResponseEntity<CustomResponse<Task>> getTaskById(@PathVariable UUID taskId) {
         try {
             Task task = taskService.getTaskById(taskId);
-            log.info("Fetched the task " + task);
-            return new ResponseEntity<>(new CustomResponse<>(task, "Fetched successfully"), HttpStatus.OK);
+            log.info("Fetched task: {}", task);
+            return ResponseEntity.ok(new CustomResponse<>(task, "Fetched task successfully"));
         } catch (Exception e) {
             log.error("Error fetching task", e);
-            return new ResponseEntity<>(new CustomResponse<>(null, e.getMessage()), HttpStatus.NOT_FOUND);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new CustomResponse<>(null, "Error fetching task"));
         }
     }
 
-    @PostMapping("/assign")
-    public ResponseEntity<CustomResponse<Task>> assignTask(@RequestParam UUID taskId, @RequestParam UUID userId) {
+    @PostMapping("/{taskId}/assign")
+    public ResponseEntity<CustomResponse<Task>> assignTask(@PathVariable UUID taskId, @RequestParam UUID userId) {
         try {
-            Task t = taskService.assignTask(taskId, userId);
-            log.info("Assigned task to the user " + t);
-            return new ResponseEntity<>(new CustomResponse<>(t, "Assigned task to user"), HttpStatus.OK);
+            Task task = taskService.assignTask(taskId, userId);
+            log.info("Assigned task to user: {}", task);
+            return ResponseEntity.ok(new CustomResponse<>(task, "Assigned task to user"));
         } catch (Exception e) {
             log.error("Error assigning task", e);
-            return new ResponseEntity<>(new CustomResponse<>(null, e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new CustomResponse<>(null, "Error assigning task"));
         }
     }
 
-    @PostMapping("/re-assign")
-    public ResponseEntity<CustomResponse<Task>> reassignTask(@RequestParam UUID taskId, @RequestParam UUID userId) {
+    @PostMapping("/{taskId}/reassign")
+    public ResponseEntity<CustomResponse<Task>> reassignTask(@PathVariable UUID taskId, @RequestParam UUID userId) {
         try {
-            Task t = taskService.reassignTask(taskId, userId);
-            log.info("Re-assigned task to the user " + t);
-            return new ResponseEntity<>(new CustomResponse<>(t, "Re-assigned to the user"), HttpStatus.OK);
+            Task task = taskService.reassignTask(taskId, userId);
+            log.info("Reassigned task to user: {}", task);
+            return ResponseEntity.ok(new CustomResponse<>(task, "Reassigned task to user"));
         } catch (Exception e) {
             log.error("Error reassigning task", e);
-            return new ResponseEntity<>(new CustomResponse<>(null, e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new CustomResponse<>(null, "Error reassigning task"));
         }
     }
 
-    @DeleteMapping("")
-    public ResponseEntity<CustomResponse<Boolean>> deleteTask(@RequestParam UUID taskId) {
+    @DeleteMapping("/{taskId}")
+    public ResponseEntity<CustomResponse<Boolean>> deleteTask(@PathVariable UUID taskId) {
         try {
             taskService.deleteTask(taskId);
-            log.info("Deleted the task");
-            return new ResponseEntity<>(new CustomResponse<>(true, "Task Deleted successfully"), HttpStatus.OK);
+            log.info("Deleted task: {}", taskId);
+            return ResponseEntity.ok(new CustomResponse<>(true, "Task deleted successfully"));
+        } catch (TaskExceptions e) {
+            log.error("Error deleting task due to reference constraint", e);
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new CustomResponse<>(null, "Error deleting task due to reference constraint"));
         } catch (Exception e) {
             log.error("Error deleting task", e);
-            return new ResponseEntity<>(new CustomResponse<>(null, e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new CustomResponse<>(null, "Error deleting task"));
         }
     }
 
-    @GetMapping("/all-assigned-tasks")
+    @GetMapping("/assigned")
     public ResponseEntity<CustomResponse<List<Task>>> getAllAssignedTasks() {
         try {
             List<Task> tasks = taskService.getAllAssignedTasks();
-            log.info("Fetched all the assigned tasks " + tasks);
-            return new ResponseEntity<>(new CustomResponse<>(tasks, "Fetched all the assigned tasks"), HttpStatus.OK);
+            log.info("Fetched all assigned tasks: {}", tasks);
+            return ResponseEntity.ok(new CustomResponse<>(tasks, "Fetched all assigned tasks"));
         } catch (Exception e) {
             log.error("Error fetching assigned tasks", e);
-            return new ResponseEntity<>(new CustomResponse<>(null, e.getMessage()), HttpStatus.NOT_FOUND);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new CustomResponse<>(null, "Error fetching assigned tasks"));
         }
     }
 
-    @GetMapping("/all-unassigned-tasks")
-    public ResponseEntity<CustomResponse<List<Task>>> allUnAssignedTasks() {
+    @GetMapping("/unassigned")
+    public ResponseEntity<CustomResponse<List<Task>>> getAllUnassignedTasks() {
         try {
             List<Task> tasks = taskService.getAllUnassignedTasks();
-            log.info("Fetched all the Un-Assigned tasks " + tasks);
-            return new ResponseEntity<>(new CustomResponse<>(tasks, "Fetched all the unassigned tasks"), HttpStatus.OK);
+            log.info("Fetched all unassigned tasks: {}", tasks);
+            return ResponseEntity.ok(new CustomResponse<>(tasks, "Fetched all unassigned tasks"));
         } catch (Exception e) {
             log.error("Error fetching unassigned tasks", e);
-            return new ResponseEntity<>(new CustomResponse<>(null, e.getMessage()), HttpStatus.NOT_FOUND);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new CustomResponse<>(null, "Error fetching unassigned tasks"));
+        }
+    }
+
+    @GetMapping("/activities/active")
+    public ResponseEntity<CustomResponse<List<UsersActivity>>> getAllActiveTasks() {
+        try {
+            List<UsersActivity> usersActivities = userActivityService.getAllActiveTasks();
+            log.info("Fetched all active tasks: {}", usersActivities);
+            return ResponseEntity.ok(new CustomResponse<>(usersActivities, "Fetched all active tasks"));
+        } catch (Exception e) {
+            log.error("Error fetching active tasks", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new CustomResponse<>(null, "Error fetching active tasks"));
+        }
+    }
+
+    @GetMapping("/activities/{taskId}/active")
+    public ResponseEntity<CustomResponse<UsersActivity>> getActiveTaskById(@PathVariable UUID taskId) {
+        try {
+            UsersActivity usersActivity = userActivityService.getActiveTaskById(taskId);
+            log.info("Fetched active task: {}", usersActivity);
+            return ResponseEntity.ok(new CustomResponse<>(usersActivity, "Fetched active task successfully"));
+        } catch (Exception e) {
+            log.error("Error fetching active task", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new CustomResponse<>(null, "Error fetching active task"));
+        }
+    }
+
+    @GetMapping("/activities/{taskId}/inactive-users")
+    public ResponseEntity<CustomResponse<List<UsersActivity>>> getAllInactiveUsersOfTask(@PathVariable UUID taskId) {
+        try {
+            List<UsersActivity> allInactiveUsers = userActivityService.allInActiveUsersOfTask(taskId);
+            log.info("Fetched all inactive users of task: {}", allInactiveUsers);
+            return ResponseEntity.ok(new CustomResponse<>(allInactiveUsers, "Fetched all inactive users of task"));
+        } catch (Exception e) {
+            log.error("Error fetching inactive users", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new CustomResponse<>(null, "Error fetching inactive users"));
         }
     }
 }

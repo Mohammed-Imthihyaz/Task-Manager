@@ -6,6 +6,9 @@ import com.imthihyaz.taskmanager.exceptions.UserActivityException;
 import com.imthihyaz.taskmanager.model.UsersActivity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -18,16 +21,18 @@ public class UserActivityService {
     @Autowired
     private UserActivityRepository userActivityRepository;
 
+    @CachePut(value = "userActivities", key = "#result.id")
     public void addUserActivityTask(UserActivityDto userActivityDto) {
         log.info("Creating a userActivity class");
-      Optional<UsersActivity> user =userActivityRepository.findByTask_TaskIdAndIsActiveTrue(userActivityDto.getTask().getTaskId());
-      if(user.isEmpty()){
-          log.info("No user is active for this task");
-      }else{
-          log.info("Some user is active, making it inactive ");
-          user.get().setActive(false);
-          this.saveOrUpdateUserActivity(user.get());
-      }
+        Optional<UsersActivity> user = getActiveUserById(userActivityDto.getUser().getUserId());
+        if (user.isPresent()) {
+            log.info("Some user is active, making it inactive ");
+            user.get().setActive(false);
+            user.get().setEndTime(LocalDateTime.now());
+            this.saveOrUpdateUserActivity(user.get());
+        } else {
+            log.info("No user is active for this task");
+        }
         UsersActivity usersActivity = UsersActivity.builder()
                 .user(userActivityDto.getUser())
                 .isActive(true)
@@ -38,16 +43,18 @@ public class UserActivityService {
         log.info("UserActivity saved successfully");
     }
 
+    @CachePut(value = "userActivities", key = "#usersActivity.id")
     public void saveOrUpdateUserActivity(UsersActivity usersActivity) {
         log.info("Saving or updating user activity");
         userActivityRepository.save(usersActivity);
         log.info("User activity saved or updated successfully");
     }
 
+    @CacheEvict(value = "userActivities", key = "#taskId")
     public void makeUserInActive(UUID taskId) {
         log.info("make user inactive for task {}", taskId);
         UsersActivity usersActivity = userActivityRepository.findByTask_TaskIdAndIsActiveTrue(taskId).orElseThrow(() -> {
-            log.error("No active task found for task {}", taskId);
+            log.error("No active task found for task heheh {}", taskId);
             throw new UserActivityException("No active task found");
         });
         usersActivity.setActive(false);
@@ -56,6 +63,7 @@ public class UserActivityService {
         this.saveOrUpdateUserActivity(usersActivity);
     }
 
+    @Cacheable(value = "userActivities", key = "'activeTasks'")
     public List<UsersActivity> getAllActiveTasks() {
         log.info("Fetching all the active activities");
         List<UsersActivity> usersActivities = userActivityRepository.findByIsActiveTrue();
@@ -63,35 +71,31 @@ public class UserActivityService {
             log.error("No active users found");
             throw new UserActivityException("No active users");
         }
-        log.info("Found all active tasks " + usersActivities);
+        log.info("Found all active tasks: {}", usersActivities);
         return usersActivities;
     }
 
+    @Cacheable(value = "userActivities", key = "#taskId")
     public UsersActivity getActiveTaskById(UUID taskId) {
-        UsersActivity task = userActivityRepository.findByTask_TaskIdAndIsActiveTrue(taskId).orElseThrow(() -> {
+        return userActivityRepository.findByTask_TaskIdAndIsActiveTrue(taskId).orElseThrow(() -> {
             log.error("No active task found for task {}", taskId);
-            throw  new UserActivityException("No active task found");
+            throw new UserActivityException("No active task found");
         });
-        return task;
     }
 
-    public List<UsersActivity> allInActiveUsersOfTask(UUID taskId){
+    @Cacheable(value = "userActivities", key = "#userId")
+    public Optional<UsersActivity> getActiveUserById(UUID userId) {
+        return userActivityRepository.findByUser_UserIdAndIsActiveTrue(userId);
+    }
 
-        List<UsersActivity> usersActivityList=userActivityRepository.findByTask_TaskIdAndIsActiveFalse(taskId);
-        if(usersActivityList.isEmpty()){
-            log.info("their are not previous users for the task");
-            throw  new UserActivityException("No previous User");
+    @Cacheable(value = "userActivities", key = "#taskId")
+    public List<UsersActivity> allInActiveUsersOfTask(UUID taskId) {
+        List<UsersActivity> usersActivityList = userActivityRepository.findByTask_TaskIdAndIsActiveFalse(taskId);
+        if (usersActivityList.isEmpty()) {
+            log.info("No previous users for the task");
+            throw new UserActivityException("No previous User");
         }
+        log.info("Found inactive users for the task: {}", usersActivityList);
         return usersActivityList;
     }
-
-    public String  getStartAndEndTime(UUID userId){
-        UsersActivity user =userActivityRepository.findByUser_UserIdAndIsActiveFalse(userId).orElseThrow(()->{
-            log.info("No user exists");
-            return new UserActivityException("No user such user exists");
-        });
-        String userTime="The user "+user.getUser().getUsername()+" started the task at "+user.getStartTime()+" and ended at "+user.getEndTime();
-        return userTime;
-    }
-
 }
