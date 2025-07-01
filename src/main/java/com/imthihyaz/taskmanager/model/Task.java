@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -17,7 +18,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Table(name = "tasks")
 @Builder
-public class Task {
+public class Task implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

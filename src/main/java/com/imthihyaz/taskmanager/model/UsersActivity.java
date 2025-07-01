@@ -3,6 +3,7 @@ package com.imthihyaz.taskmanager.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -12,7 +13,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 @Table(name = "users_activity")
-public class UsersActivity {
+public class UsersActivity implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;

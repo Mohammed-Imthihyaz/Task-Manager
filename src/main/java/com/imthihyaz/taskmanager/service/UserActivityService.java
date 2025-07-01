@@ -63,7 +63,7 @@ public class UserActivityService {
         this.saveOrUpdateUserActivity(usersActivity);
     }
 
-    @Cacheable(value = "userActivities", key = "'activeTasks'")
+    @Cacheable(value = "userActivities", key = "activeTasks")
     public List<UsersActivity> getAllActiveTasks() {
         log.info("Fetching all the active activities");
         List<UsersActivity> usersActivities = userActivityRepository.findByIsActiveTrue();
