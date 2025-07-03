@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -152,9 +153,9 @@ public class TaskController {
     @GetMapping("/activities/{taskId}/active")
     public ResponseEntity<CustomResponse<UsersActivity>> getActiveTaskById(@PathVariable UUID taskId) {
         try {
-            UsersActivity usersActivity = userActivityService.getActiveTaskById(taskId);
+            Optional<UsersActivity> usersActivity = userActivityService.getActiveTaskById(taskId);
             log.info("Fetched active task: {}", usersActivity);
-            return ResponseEntity.ok(new CustomResponse<>(usersActivity, "Fetched active task successfully"));
+            return ResponseEntity.ok(new CustomResponse<>(usersActivity.get(), "Fetched active task successfully"));
         } catch (Exception e) {
             log.error("Error fetching active task", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
