@@ -120,4 +120,9 @@ public class UserActivityService {
             throw new UserActivityException("Task cannot be null or have null TaskId");
         }
     }
+    public List<UsersActivity> getAllAssignedUserTasks(UUID userId){
+        log.info("Fetching all tasks of a user");
+        List<UsersActivity> usersActivityList =userActivityRepository.findByUser_UserIdAndIsActiveFalse(userId);
+        return usersActivityList;
+    }
 }

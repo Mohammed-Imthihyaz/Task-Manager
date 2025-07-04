@@ -175,4 +175,17 @@ public class TaskController {
                     .body(new CustomResponse<>(null, "Error fetching inactive users"));
         }
     }
+    @GetMapping("activities/{userId}/user-task")
+    public ResponseEntity<CustomResponse<List<UsersActivity>>> getAllTaskOfUser(@PathVariable UUID userId){
+        try{
+            List<UsersActivity> allTaskOfUser =userActivityService.getAllAssignedUserTasks(userId);
+            log.info("Fetched all inactive users of task: {}", allTaskOfUser);
+            return ResponseEntity.ok(new CustomResponse<>(allTaskOfUser, "Fetched all tasks of a user"));
+        } catch (Exception e) {
+            log.error("Error fetching tasks of a users", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new CustomResponse<>(null, "Error fetching tasks of a users"));
+        }
+    }
+
 }

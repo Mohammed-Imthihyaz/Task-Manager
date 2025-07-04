@@ -12,5 +12,6 @@ public interface UserActivityRepository extends JpaRepository<UsersActivity, UUI
     Optional<UsersActivity> findByTask_TaskIdAndIsActiveTrue(UUID taskId);
     List<UsersActivity> findByTask_TaskIdAndIsActiveFalse(UUID taskId);
     Optional<UsersActivity> findByUser_UserIdAndIsActiveTrue(UUID userId);
+    List<UsersActivity> findByUser_UserIdAndIsActiveFalse(UUID userId);
     List<UsersActivity> findByTask_TaskId(UUID taskId);
 }
